@@ -19,3 +19,6 @@
 
 # Go workspace file
 go.work
+
+./terraform/tf_key.json
+./ansible/hosts.txt
