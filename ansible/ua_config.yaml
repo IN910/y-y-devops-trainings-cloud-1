@@ -1,0 +1,52 @@
+status:
+        port: 16421
+storages:
+        - name: main
+          plugin: fs
+          config: 
+            directory: /var/lib/yandex/unified_agent/main
+            max_partition_size: 1gb
+            max_segment_size: 500mb
+
+channels:
+        - name: main_channel
+          channel: 
+            fanout:
+               - channel:
+                  channel_ref:
+                    name: debugging_channel
+               - channel:
+                   channel_ref:
+                    name: cloud_monitoring
+           
+        - name: debugging_channel
+          channel:
+            output: 
+              plugin: debug
+              id: my_output_id
+              config:
+                file_name: /dev/stdout
+                delimiter: "\n==========\n"
+                  
+        - name: cloud_monitoring
+          channel:
+            pipe:
+               - storage_ref:
+                     name: main
+            output:
+              plugin: yc_metrics
+              config: 
+                    folder_id: b1ggul1r9pffesi964e0
+                    iam:
+                      cloud_meta: {}
+routes:
+          - input:
+               plugin: metrics_pull
+               config:
+                  url: http://localhost:9090/metrics
+                  format: 
+                     prometheus: {}
+                  namespace: "vm"
+            channel:
+                channel_ref:
+                    name: main_channel

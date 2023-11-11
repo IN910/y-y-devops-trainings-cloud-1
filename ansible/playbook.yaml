@@ -1,0 +1,18 @@
+---
+- name: "Playbook to copy new config and restart unified agent  container (yc)"
+  become: true
+  hosts: "yandex_ig_vms"
+  vars:
+    container_name: "ua_container"
+  tasks:
+    - copy: 
+        src: ./ua_config.yaml
+        dest: /yandex_configs/config.yml
+
+    - name: "restarting docker-unified-agent-container"
+      shell: "docker restart {{ container_name }}"
+      register: output_docker
+    
+    - debug:
+        var: output_docker
+    
