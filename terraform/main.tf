@@ -14,7 +14,7 @@ provider "yandex" {
 }
 
 output "vms" {
-  value = [for instance in yandex_compute_instance_group.group1.instances: instance.network_interface.0.nat_ip_address]
+  value = [for instance in yandex_compute_instance_group.group1.instances : instance.network_interface.0.nat_ip_address]
 }
 resource "yandex_vpc_network" "foo" {}
 
@@ -56,21 +56,45 @@ data "yandex_compute_image" "coi" {
 }
 
 
+
+resource "yandex_lb_network_load_balancer" "foo" {
+  name = "my-network-load-balancer"
+
+  listener {
+    name = "my-listener"
+    port = 8080
+    external_address_spec {
+      ip_version = "ipv4"
+    }
+  }
+
+
+
+  attached_target_group {
+    target_group_id = yandex_compute_instance_group.group1.load_balancer.0.target_group_id
+
+    healthcheck {
+      name                = "http"
+      interval            = 20
+      timeout             = 10
+      healthy_threshold   = 2
+      unhealthy_threshold = 2
+      http_options {
+        port = 8080
+        path = "/ping"
+      }
+    }
+  }
+}
+
+
+
 resource "yandex_compute_instance_group" "group1" {
   name                = "test-ig"
   folder_id           = local.folder_id
   service_account_id  = data.yandex_iam_service_account.ig-sa.id
   deletion_protection = false
-  health_check {
-    interval            = 20
-    timeout             = 10
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    http_options {
-      port = 8080
-      path = "/ping"
-    }
-  }
+
   load_balancer {
     target_group_name            = "tg-for-ig"
     max_opening_traffic_duration = 60
@@ -124,7 +148,7 @@ resource "yandex_compute_instance_group" "group1" {
 
   deploy_policy {
     max_unavailable = 1
-    max_expansion = 0
-}
+    max_expansion   = 0
+  }
 }
 
